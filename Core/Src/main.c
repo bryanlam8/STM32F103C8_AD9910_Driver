@@ -27,7 +27,29 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+struct ad9910_reg{
+	uint32_t CFR1;	//0x00
+	uint32_t CFR2;	//0x01
+	uint32_t CFR3;	//0x02
+	uint32_t Aux_DAC_Control;	//0x03
+	uint32_t IO_UPDATE;	//0x04
+	uint32_t FTW;	//0x07
+	uint16_t POW;	//0x08
+	uint32_t ASF;	//0x09
+	uint32_t Multichip_Sync; //0x0A
+	uint64_t Digital_Ramp_Limit; //0x0B
+	uint64_t Digital_Ramp_Step; //0x0C
+	uint32_t Digital_Ramp_Rate; //0x0D
+	uint64_t Profile_0; // 0x0E
+	uint64_t Profile_1; //0x0F
+	uint64_t Profile_2; //0x10
+	uint64_t Profile_3; //0x11
+	uint64_t Profile_4; //0x12
+	uint64_t Profile_5;	//0x13
+	uint64_t Profile_6; //0x14
+	uint64_t Profile_7; //0x15
+	uint32_t RAM;	//0x16
+};
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -56,7 +78,7 @@ static void MX_SPI1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+struct ad9910_reg AD9910;
 /* USER CODE END 0 */
 
 /**
@@ -89,6 +111,20 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+	AD9910.CFR1 = 0xC0000002;
+	AD9910.CFR2 = 0x00C80820;
+	AD9910.CFR3 = 0x1F3FC000;
+	AD9910.Aux_DAC_Control = 0x00007F7F;
+	AD9910.IO_UPDATE = 0x00000002;
+	AD9910.FTW = 0x0;
+	AD9910.POW = 0x0;
+	AD9910.ASF = 0x0;
+	AD9910.Multichip_Sync = 0x0;
+	AD9910.Digital_Ramp_Limit = 0x0;
+	AD9910.Digital_Ramp_Step = 0x0;
+	AD9910.Digital_Ramp_Rate = 0x0;
+	AD9910.Profile_0 = 0x08002DFFC0000004;
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -98,8 +134,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		IO_UPDATE_GPIO_Port->BSRR = IO_UPDATE_Pin;
-		IO_UPDATE_GPIO_Port->BSRR = IO_UPDATE_Pin << 16u;
   }
   /* USER CODE END 3 */
 }
