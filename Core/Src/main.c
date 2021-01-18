@@ -38,7 +38,7 @@ struct ad9910_reg{
 	uint32_t ASF;	//0x09
 	uint32_t Multichip_Sync; //0x0A
 	uint64_t Digital_Ramp_Limit; //0x0B
-	uint64_t Digital_Ramp_Step; //0x0C
+	uint64_t Digital_Ramp_Step_Size; //0x0C
 	uint32_t Digital_Ramp_Rate; //0x0D
 	uint64_t Profile_0; // 0x0E
 	uint64_t Profile_1; //0x0F
@@ -50,6 +50,21 @@ struct ad9910_reg{
 	uint64_t Profile_7; //0x15
 	uint32_t RAM;	//0x16
 };
+
+enum REG_ADDRESS{	_CFR1 , _CFR2, _CFR3, _AUX_DAC_CONTROL, _IO_UPDATE, _FTW = 7, _POW, 
+							_ASF, _MULTICHIP_SYNC, _DIGITAL_RAMP_LIMIT, _DIGITAL_RAMP_STEP_SIZE, 
+							_DIGITAL_RAMP_RATE, _PROFILE_0, _PROFILE_1, _PROFILE_2,
+							_PROFILE_3, _PROFILE_4, _PROFILE_5, _PROFILE_6, _PROFILE_7,
+							_RAM
+						};
+
+enum REG_BYTE_SIZE{	_CFR1_SIZE = 4, _CFR2_SIZE = 4, _CFR3_SIZE = 4, _AUX_ADC_CONTROL_SIZE = 4,
+											_IO_UPDATE_SIZE  = 4, _FTW_SIZE = 4, _POW_SIZE = 2, _ASF_SIZE = 4, 
+											_MULTICHIP_SYNC_SIZE = 4, _DIGITAL_RAMP_LIMIT_SIZE = 8, _DIGITAL_RAMP_STEP_SIZE_SIZE = 8,
+											_DIGITAL_RAMP_RATE_SIZE = 4, _PROFILE_0_SIZE = 8, _PROFILE_1_SIZE = 8, _PROFILE_2_SIZE = 8,
+											_PROFILE_3_SIZE = 8, _PROFILE_4_SIZE = 8, _PROFILE_5_SIZE = 8, _PROFILE_6_SIZE = 8,
+											_PROFILE_7_SIZE = 8, _RAM_SIZE = 4
+										};
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -65,7 +80,8 @@ struct ad9910_reg{
 SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
-
+uint8_t tran[9] = {0};
+struct ad9910_reg AD9910;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -73,12 +89,55 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
-
+void AD9910_Init(void);
+void AD9910_Reg_Write(enum REG_ADDRESS, enum REG_BYTE_SIZE,uint64_t);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-struct ad9910_reg AD9910;
+void AD9910_Reg_Write(enum REG_ADDRESS reg_address, enum REG_BYTE_SIZE reg_byte_size, uint64_t content){
+	/*CFR1*/
+//	tran[4] = (uint8_t) AD9910.CFR1;
+//	tran[3] = (uint8_t) (AD9910.CFR1 >> 8);
+//	tran[2] = (uint8_t) (AD9910.CFR1 >> 16);
+//	tran[1] = (uint8_t) (AD9910.CFR1 >> 24);
+//	tran[0] = 0x00;
+//	HAL_SPI_Transmit(&hspi1, tran, 5 , 10);
+}
+
+void AD9910_Init(){
+	enum REG_ADDRESS reg_address;
+	enum REG_BYTE_SIZE reg_byte_size;
+	AD9910.CFR1 = 0xC0000002;
+	AD9910.CFR2 = 0x00C80820;
+	AD9910.CFR3 = 0x1F3FC000;
+	AD9910.Aux_DAC_Control = 0x00007F7F;
+	AD9910.IO_UPDATE = 0x00000002;
+	AD9910.FTW = 0x0;
+	AD9910.POW = 0x0;
+	AD9910.ASF = 0x0;
+	AD9910.Multichip_Sync = 0x0;
+	AD9910.Digital_Ramp_Limit = 0x0;
+	AD9910.Digital_Ramp_Step_Size = 0x0;
+	AD9910.Digital_Ramp_Rate = 0x0;
+	AD9910.Profile_0 = 0x08002DFFC0000004;
+	
+	AD9910_Reg_Write(_CFR1, _CFR1_SIZE, (uint64_t)AD9910.CFR1);
+	AD9910_Reg_Write(_CFR2, _CFR2_SIZE, (uint64_t)AD9910.CFR2);
+	AD9910_Reg_Write(_CFR3, _CFR3_SIZE, (uint64_t)AD9910.CFR3);
+	AD9910_Reg_Write(_AUX_DAC_CONTROL, _AUX_ADC_CONTROL_SIZE, (uint64_t)AD9910.Aux_DAC_Control);
+	AD9910_Reg_Write(_IO_UPDATE, _IO_UPDATE_SIZE, (uint64_t)AD9910.IO_UPDATE);
+	AD9910_Reg_Write(_FTW, _FTW_SIZE, (uint64_t)AD9910.FTW);
+	AD9910_Reg_Write(_POW, _POW_SIZE, (uint64_t)AD9910.POW);
+	AD9910_Reg_Write(_ASF, _ASF_SIZE, (uint64_t)AD9910.ASF);
+	AD9910_Reg_Write(_MULTICHIP_SYNC, _MULTICHIP_SYNC_SIZE, AD9910.Multichip_Sync);
+	AD9910_Reg_Write(_DIGITAL_RAMP_LIMIT, _DIGITAL_RAMP_LIMIT_SIZE, AD9910.Digital_Ramp_Limit);
+	AD9910_Reg_Write(_DIGITAL_RAMP_STEP_SIZE, _DIGITAL_RAMP_STEP_SIZE_SIZE, AD9910.Digital_Ramp_Step_Size);
+	AD9910_Reg_Write(_DIGITAL_RAMP_RATE, _DIGITAL_RAMP_RATE_SIZE, AD9910.Digital_Ramp_Rate);
+	AD9910_Reg_Write(_PROFILE_0, _PROFILE_0_SIZE, AD9910.Profile_0);
+	
+	
+}
 /* USER CODE END 0 */
 
 /**
@@ -111,19 +170,6 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-	AD9910.CFR1 = 0xC0000002;
-	AD9910.CFR2 = 0x00C80820;
-	AD9910.CFR3 = 0x1F3FC000;
-	AD9910.Aux_DAC_Control = 0x00007F7F;
-	AD9910.IO_UPDATE = 0x00000002;
-	AD9910.FTW = 0x0;
-	AD9910.POW = 0x0;
-	AD9910.ASF = 0x0;
-	AD9910.Multichip_Sync = 0x0;
-	AD9910.Digital_Ramp_Limit = 0x0;
-	AD9910.Digital_Ramp_Step = 0x0;
-	AD9910.Digital_Ramp_Rate = 0x0;
-	AD9910.Profile_0 = 0x08002DFFC0000004;
 	
   /* USER CODE END 2 */
 
