@@ -81,6 +81,7 @@ SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 uint8_t tran[9] = {0};
+uint32_t data[200];
 struct ad9910_reg AD9910;
 /* USER CODE END PV */
 
@@ -91,23 +92,45 @@ static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 void AD9910_Init(void);
 void AD9910_Reg_Write(enum REG_ADDRESS, enum REG_BYTE_SIZE,uint64_t);
+void AD9910_RAM_Load_Profile_0(void);
+void AD9910_IO_UPDATE(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void AD9910_Reg_Write(enum REG_ADDRESS reg_address, enum REG_BYTE_SIZE reg_byte_size, uint64_t content){
-	/*CFR1*/
-//	tran[4] = (uint8_t) AD9910.CFR1;
-//	tran[3] = (uint8_t) (AD9910.CFR1 >> 8);
-//	tran[2] = (uint8_t) (AD9910.CFR1 >> 16);
-//	tran[1] = (uint8_t) (AD9910.CFR1 >> 24);
-//	tran[0] = 0x00;
-//	HAL_SPI_Transmit(&hspi1, tran, 5 , 10);
+	uint8_t tran[9];
+	switch(reg_byte_size){
+		case 2:
+			tran[2] = (uint8_t) content;
+			tran[1] = (uint8_t)(content >> 8);
+			tran[0] = reg_address;
+			HAL_SPI_Transmit(&hspi1, tran, 3, 10);
+			break;
+		case 4:
+			tran[4] = (uint8_t) content;
+			tran[3] = (uint8_t)(content >> 8);
+			tran[2] = (uint8_t)(content >> 16);
+			tran[1] = (uint8_t)(content >> 24);
+			tran[0] = reg_address;
+			HAL_SPI_Transmit(&hspi1, tran, 5, 10);
+			break;
+		case 8:
+			tran[8] = (uint8_t) content;
+			tran[7] = (uint8_t)(content >> 8);
+			tran[6] = (uint8_t)(content >> 16);
+			tran[5] = (uint8_t)(content >> 24);
+			tran[4] = (uint8_t)(content >> 32);
+			tran[3] = (uint8_t)(content >> 40);
+			tran[2] = (uint8_t)(content >> 48);
+			tran[1] = (uint8_t)(content >> 56);
+			tran[0] = reg_address;
+			HAL_SPI_Transmit(&hspi1, tran, 9, 10);
+			break;
+	}
 }
 
 void AD9910_Init(){
-	enum REG_ADDRESS reg_address;
-	enum REG_BYTE_SIZE reg_byte_size;
 	AD9910.CFR1 = 0xC0000002;
 	AD9910.CFR2 = 0x00C80820;
 	AD9910.CFR3 = 0x1F3FC000;
@@ -135,8 +158,26 @@ void AD9910_Init(){
 	AD9910_Reg_Write(_DIGITAL_RAMP_STEP_SIZE, _DIGITAL_RAMP_STEP_SIZE_SIZE, AD9910.Digital_Ramp_Step_Size);
 	AD9910_Reg_Write(_DIGITAL_RAMP_RATE, _DIGITAL_RAMP_RATE_SIZE, AD9910.Digital_Ramp_Rate);
 	AD9910_Reg_Write(_PROFILE_0, _PROFILE_0_SIZE, AD9910.Profile_0);
-	
-	
+	AD9910_IO_UPDATE();
+}
+
+void AD9910_RAM_Load_Profile_0(){
+	int i = 0;
+	for(; i < 100; i++){
+		data[i] = 0xFFFFFFFF;
+	}
+	for(; i < 200; i++){
+		data[i] = 0x0;
+	}
+	for(i = 0; i < 200; i++){
+		AD9910_Reg_Write(_RAM, _RAM_SIZE, data[i]);
+	}
+	AD9910_IO_UPDATE();
+}
+
+void AD9910_IO_UPDATE(){
+	HAL_GPIO_WritePin(IO_UPDATE_GPIO_Port, IO_UPDATE_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(IO_UPDATE_GPIO_Port, IO_UPDATE_Pin, GPIO_PIN_RESET);
 }
 /* USER CODE END 0 */
 
@@ -170,7 +211,8 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-	
+	AD9910_Init();
+	AD9910_RAM_Load_Profile_0();
   /* USER CODE END 2 */
 
   /* Infinite loop */
