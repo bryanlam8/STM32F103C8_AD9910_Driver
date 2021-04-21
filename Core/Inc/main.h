@@ -60,6 +60,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define bCS_Pin GPIO_PIN_4
 #define bCS_GPIO_Port GPIOA
+#define DEBUG_Pin GPIO_PIN_12
+#define DEBUG_GPIO_Port GPIOB
 #define PF0_Pin GPIO_PIN_13
 #define PF0_GPIO_Port GPIOB
 #define PF1_Pin GPIO_PIN_14

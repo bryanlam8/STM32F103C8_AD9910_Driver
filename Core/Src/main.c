@@ -94,11 +94,13 @@ void AD9910_Init(void);
 void AD9910_Reg_Write(enum REG_ADDRESS, enum REG_BYTE_SIZE,uint64_t);
 void AD9910_RAM_Load_Profile_0(void);
 void AD9910_IO_UPDATE(void);
+void AD9910_Profile_Set(int profile);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void AD9910_Reg_Write(enum REG_ADDRESS reg_address, enum REG_BYTE_SIZE reg_byte_size, uint64_t content){
+	HAL_GPIO_WritePin(bCS_GPIO_Port, bCS_Pin, GPIO_PIN_RESET);
 	uint8_t tran[9];
 	switch(reg_byte_size){
 		case 2:
@@ -128,6 +130,7 @@ void AD9910_Reg_Write(enum REG_ADDRESS reg_address, enum REG_BYTE_SIZE reg_byte_
 			HAL_SPI_Transmit(&hspi1, tran, 9, 10);
 			break;
 	}
+	HAL_GPIO_WritePin(bCS_GPIO_Port, bCS_Pin, GPIO_PIN_SET);
 }
 
 void AD9910_Init(){
@@ -144,7 +147,7 @@ void AD9910_Init(){
 	AD9910.Digital_Ramp_Step_Size = 0x0;
 	AD9910.Digital_Ramp_Rate = 0x0;
 	AD9910.Profile_0 = 0x08002DFFC0000004;
-	
+	                                                                         
 	AD9910_Reg_Write(_CFR1, _CFR1_SIZE, (uint64_t)AD9910.CFR1);
 	AD9910_Reg_Write(_CFR2, _CFR2_SIZE, (uint64_t)AD9910.CFR2);
 	AD9910_Reg_Write(_CFR3, _CFR3_SIZE, (uint64_t)AD9910.CFR3);
@@ -162,6 +165,13 @@ void AD9910_Init(){
 }
 
 void AD9910_RAM_Load_Profile_0(){
+	//Reset RAM Enable bit
+	AD9910.CFR1 = 0x40000002;
+	AD9910_Reg_Write(_CFR1, _CFR1_SIZE, (uint64_t)AD9910.CFR1);
+	AD9910_IO_UPDATE();
+	
+	AD9910_Profile_Set(0);
+	
 	int i = 0;
 	for(; i < 100; i++){
 		data[i] = 0xFFFFFFFF;
@@ -171,13 +181,63 @@ void AD9910_RAM_Load_Profile_0(){
 	}
 	for(i = 0; i < 200; i++){
 		AD9910_Reg_Write(_RAM, _RAM_SIZE, data[i]);
+		AD9910_IO_UPDATE();
 	}
+	
+	//Set RAM Enable bit
+	AD9910.CFR1 = 0xC0000002;
+	AD9910_Reg_Write(_CFR1, _CFR1_SIZE, (uint64_t)AD9910.CFR1);
 	AD9910_IO_UPDATE();
 }
 
 void AD9910_IO_UPDATE(){
 	HAL_GPIO_WritePin(IO_UPDATE_GPIO_Port, IO_UPDATE_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(IO_UPDATE_GPIO_Port, IO_UPDATE_Pin, GPIO_PIN_RESET);
+}
+
+void AD9910_Profile_Set(int profile){
+	switch(profile){
+		case 0:
+			HAL_GPIO_WritePin(PF2_GPIO_Port, PF2_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PF1_GPIO_Port, PF1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PF0_GPIO_Port, PF0_Pin, GPIO_PIN_RESET);
+			break;
+		case 1:
+			HAL_GPIO_WritePin(PF2_GPIO_Port, PF2_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PF1_GPIO_Port, PF1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PF0_GPIO_Port, PF0_Pin, GPIO_PIN_SET);
+			break;
+		case 2:
+			HAL_GPIO_WritePin(PF2_GPIO_Port, PF2_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PF1_GPIO_Port, PF1_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(PF0_GPIO_Port, PF0_Pin, GPIO_PIN_RESET);
+			break;
+		case 3:
+			HAL_GPIO_WritePin(PF2_GPIO_Port, PF2_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PF1_GPIO_Port, PF1_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(PF0_GPIO_Port, PF0_Pin, GPIO_PIN_SET);
+			break;
+		case 4:
+			HAL_GPIO_WritePin(PF2_GPIO_Port, PF2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(PF1_GPIO_Port, PF1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PF0_GPIO_Port, PF0_Pin, GPIO_PIN_RESET);
+			break;
+		case 5:
+			HAL_GPIO_WritePin(PF2_GPIO_Port, PF2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(PF1_GPIO_Port, PF1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(PF0_GPIO_Port, PF0_Pin, GPIO_PIN_SET);
+			break;
+		case 6:
+			HAL_GPIO_WritePin(PF2_GPIO_Port, PF2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(PF1_GPIO_Port, PF1_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(PF0_GPIO_Port, PF0_Pin, GPIO_PIN_RESET);
+			break;
+		default: //profile 7
+			HAL_GPIO_WritePin(PF2_GPIO_Port, PF2_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(PF1_GPIO_Port, PF1_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(PF0_GPIO_Port, PF0_Pin, GPIO_PIN_SET);
+			break;
+	}
 }
 /* USER CODE END 0 */
 
@@ -211,6 +271,7 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+	HAL_Delay(500);
 	AD9910_Init();
 	AD9910_RAM_Load_Profile_0();
   /* USER CODE END 2 */
@@ -220,7 +281,8 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+		HAL_GPIO_TogglePin(DEBUG_GPIO_Port, DEBUG_Pin);
+		HAL_Delay(100);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -320,7 +382,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, bCS_Pin|IO_RESET_Pin|IO_UPDATE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, PF0_Pin|PF1_Pin|PF2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, DEBUG_Pin|PF0_Pin|PF1_Pin|PF2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : bCS_Pin IO_RESET_Pin IO_UPDATE_Pin */
   GPIO_InitStruct.Pin = bCS_Pin|IO_RESET_Pin|IO_UPDATE_Pin;
@@ -329,8 +391,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PF0_Pin PF1_Pin PF2_Pin */
-  GPIO_InitStruct.Pin = PF0_Pin|PF1_Pin|PF2_Pin;
+  /*Configure GPIO pins : DEBUG_Pin PF0_Pin PF1_Pin PF2_Pin */
+  GPIO_InitStruct.Pin = DEBUG_Pin|PF0_Pin|PF1_Pin|PF2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
